@@ -7,8 +7,10 @@ import {
   LayoutDashboard,
   Percent,
   Search,
+  TrendingUp,
   Users,
 } from "lucide-react"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -18,6 +20,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart"
 import { cn } from "@/lib/utils"
 
 type Timeline = "last30" | "thisMonth"
@@ -139,6 +147,88 @@ const timelineOptions: { value: Timeline; label: string }[] = [
   { value: "thisMonth", label: "This Month" },
 ]
 
+type RevenuePoint = {
+  label: string
+  revenue: number
+}
+
+const last30RevenueData: RevenuePoint[] = [
+  { label: "May 12", revenue: 334 },
+  { label: "May 13", revenue: 385 },
+  { label: "May 14", revenue: 363 },
+  { label: "May 15", revenue: 415 },
+  { label: "May 16", revenue: 393 },
+  { label: "May 17", revenue: 372 },
+  { label: "May 18", revenue: 343 },
+  { label: "May 19", revenue: 405 },
+  { label: "May 20", revenue: 446 },
+  { label: "May 21", revenue: 421 },
+  { label: "May 22", revenue: 395 },
+  { label: "May 23", revenue: 370 },
+  { label: "May 24", revenue: 347 },
+  { label: "May 25", revenue: 381 },
+  { label: "May 26", revenue: 412 },
+  { label: "May 27", revenue: 436 },
+  { label: "May 28", revenue: 459 },
+  { label: "May 29", revenue: 484 },
+  { label: "May 30", revenue: 457 },
+  { label: "May 31", revenue: 426 },
+  { label: "Jun 1", revenue: 441 },
+  { label: "Jun 2", revenue: 465 },
+  { label: "Jun 3", revenue: 486 },
+  { label: "Jun 4", revenue: 455 },
+  { label: "Jun 5", revenue: 432 },
+  { label: "Jun 6", revenue: 410 },
+  { label: "Jun 7", revenue: 387 },
+  { label: "Jun 8", revenue: 418 },
+  { label: "Jun 9", revenue: 444 },
+  { label: "Jun 10", revenue: 468 },
+]
+
+const thisMonthRevenueData: RevenuePoint[] = [
+  { label: "Jun 1", revenue: 860 },
+  { label: "Jun 2", revenue: 912 },
+  { label: "Jun 3", revenue: 943 },
+  { label: "Jun 4", revenue: 988 },
+  { label: "Jun 5", revenue: 1049 },
+  { label: "Jun 6", revenue: 976 },
+  { label: "Jun 7", revenue: 922 },
+  { label: "Jun 8", revenue: 997 },
+  { label: "Jun 9", revenue: 1059 },
+  { label: "Jun 10", revenue: 1114 },
+]
+
+const revenueChartConfig = {
+  revenue: {
+    label: "Revenue",
+    color: "#10b981",
+  },
+} satisfies ChartConfig
+
+const revenueTimelineMeta: Record<
+  Timeline,
+  { title: string; description: string; gradientId: string }
+> = {
+  last30: {
+    title: "Revenue Analytics",
+    description: "Daily revenue over the last 30 days",
+    gradientId: "revenueGradientLast30",
+  },
+  thisMonth: {
+    title: "Revenue Analytics",
+    description: "Daily revenue for June 2026",
+    gradientId: "revenueGradientThisMonth",
+  },
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value)
+}
+
 function MetricCard({
   title,
   value,
@@ -227,6 +317,153 @@ function TimelineToggle({
         </button>
       ))}
     </div>
+  )
+}
+
+function RevenueAreaChart({
+  timeline,
+  data,
+}: {
+  timeline: Timeline
+  data: RevenuePoint[]
+}) {
+  const meta = revenueTimelineMeta[timeline]
+  const total = data.reduce((sum, point) => sum + point.revenue, 0)
+  const peak = Math.max(...data.map((point) => point.revenue))
+
+  return (
+    <Card className="relative overflow-hidden border border-emerald-500/20 bg-slate-900/60 py-0 shadow-[0_0_32px_-8px_rgba(16,185,129,0.25)] ring-0 backdrop-blur-sm transition-all duration-300 hover:border-emerald-400/30">
+      <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-emerald-500/[0.04] to-transparent" />
+      <CardHeader className="relative border-b border-slate-800/80">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <div className="flex size-8 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10">
+                <TrendingUp
+                  className="size-4 text-emerald-400"
+                  strokeWidth={1.75}
+                />
+              </div>
+              <CardTitle className="font-heading text-lg font-semibold text-white">
+                {meta.title}
+              </CardTitle>
+            </div>
+            <CardDescription className="text-slate-400">
+              {meta.description}
+            </CardDescription>
+          </div>
+          <div className="flex gap-6 text-sm">
+            <div>
+              <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
+                Period Total
+              </p>
+              <p className="mt-0.5 font-heading text-xl font-semibold text-emerald-400 tabular-nums transition-all duration-300">
+                {formatCurrency(total)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
+                Peak Day
+              </p>
+              <p className="mt-0.5 font-heading text-xl font-semibold text-white tabular-nums transition-all duration-300">
+                {formatCurrency(peak)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="relative px-2 pt-4 pb-4 sm:px-6">
+        <ChartContainer
+          config={revenueChartConfig}
+          className="aspect-auto h-[220px] w-full sm:h-[280px] lg:h-[320px]"
+        >
+          <AreaChart
+            data={data}
+            margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+          >
+            <defs>
+              <linearGradient
+                id={meta.gradientId}
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
+                <stop offset="0%" stopColor="#10b981" stopOpacity={0.45} />
+                <stop offset="55%" stopColor="#10b981" stopOpacity={0.12} />
+                <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+              </linearGradient>
+              <filter
+                id="revenueLineGlow"
+                x="-20%"
+                y="-20%"
+                width="140%"
+                height="140%"
+              >
+                <feGaussianBlur stdDeviation="2" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            <CartesianGrid
+              vertical={false}
+              strokeDasharray="3 3"
+              className="stroke-slate-800/80"
+            />
+            <XAxis
+              dataKey="label"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={10}
+              minTickGap={timeline === "last30" ? 28 : 16}
+              interval="preserveStartEnd"
+              className="fill-slate-500 text-[10px] sm:text-xs"
+            />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              width={48}
+              tickFormatter={(value) =>
+                value >= 1000 ? `$${(value / 1000).toFixed(1)}k` : `$${value}`
+              }
+              className="fill-slate-500 text-[10px] sm:text-xs"
+            />
+            <ChartTooltip
+              cursor={{
+                stroke: "rgba(16, 185, 129, 0.35)",
+                strokeWidth: 1,
+                strokeDasharray: "4 4",
+              }}
+              content={
+                <ChartTooltipContent
+                  className="border-slate-800 bg-slate-900/95 text-slate-100 shadow-[0_0_24px_-4px_rgba(16,185,129,0.35)]"
+                  labelClassName="text-slate-300"
+                  formatter={(value) => formatCurrency(Number(value))}
+                />
+              }
+            />
+            <Area
+              type="monotone"
+              dataKey="revenue"
+              stroke="#10b981"
+              strokeWidth={2.5}
+              fill={`url(#${meta.gradientId})`}
+              filter="url(#revenueLineGlow)"
+              dot={false}
+              activeDot={{
+                r: 5,
+                fill: "#10b981",
+                stroke: "#064e3b",
+                strokeWidth: 2,
+              }}
+            />
+          </AreaChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -339,6 +576,11 @@ export default function App() {
 
   const metrics = timelineMetrics[timeline]
 
+  const revenueData = useMemo(
+    () => (timeline === "last30" ? last30RevenueData : thisMonthRevenueData),
+    [timeline]
+  )
+
   const filteredCustomers = useMemo(
     () =>
       customers.filter((customer) =>
@@ -413,6 +655,10 @@ export default function App() {
             {metrics.map((metric) => (
               <MetricCard key={metric.title} {...metric} />
             ))}
+          </div>
+
+          <div className="mt-8">
+            <RevenueAreaChart timeline={timeline} data={revenueData} />
           </div>
 
           <div className="mt-8">
